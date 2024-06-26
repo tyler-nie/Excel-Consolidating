@@ -9,12 +9,13 @@ destination_sheet = destination_workbook.active
 
 
 def main():
-    """ """
     get_data()
 
 
 def get_data():
-
+    """
+    Gets data and pushes through to append to master list
+    """
     # Specify the column for bolded values
     column_index = 1
     count = 0
@@ -56,7 +57,7 @@ def get_folder_num(row):
 
 def get_results(row):
     """
-    Gets the data required from the test
+    Gets the data required from the test result
     """
     source = row[0].value
     date = (str(row[3].value)).split()[0]
