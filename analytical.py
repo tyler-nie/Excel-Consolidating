@@ -36,7 +36,8 @@ def get_data():
 
         else:
             results.append(get_results(row))
-            push_data(folder_num, results)
+    push_data(folder_num, results)
+    results = []  # Clear results after pushing
 
 
 def get_folder_num(row):
@@ -47,7 +48,7 @@ def get_folder_num(row):
 
     if folder_index != -1:
         # Extract Folder Num from String
-        folder_num_str = row[folder_index + len("FOLDER NUM.:") :]
+        folder_num_str = row[folder_index + len("FOLDER NUM.:"):]
         folder_num = folder_num_str.split()[0]
 
         print(f"Folder Number: {folder_num}")
@@ -89,10 +90,10 @@ def create_new_column(analyte, method):
     """
     Creates new column with the new analyte
     """
-
     index = destination_sheet.max_column + 1
     destination_sheet.cell(row=1, column=index, value=analyte)
     destination_sheet.cell(row=2, column=index, value=method)
+    print(f"Created new column at index {index} for analyte {analyte} with method {method}")
     return index
 
 
@@ -110,7 +111,6 @@ def push_data(folder_num, data):
     """
     Pushes data to the masterlist
     """
-
     for result in data:
         source = result["source"]
         index = find_column_index(result)
@@ -123,6 +123,8 @@ def push_data(folder_num, data):
         if index is None:  # If the index is none, analyte does not exists in masterlist
             index = create_new_column(result["analyte"], result["method"])
 
+        # print(f"Writing data at row {row_num}, column {index}")  # Troubleshooting
+        
         destination_sheet.cell(row=row_num, column=1, value=result["source"])
         destination_sheet.cell(row=row_num, column=2, value=result["date"])
         destination_sheet.cell(row=row_num, column=3, value=folder_num)
