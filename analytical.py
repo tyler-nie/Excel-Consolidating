@@ -7,6 +7,8 @@ source_sheet = source_workbook.active
 destination_workbook = load_workbook(master_list)
 destination_sheet = destination_workbook.active
 
+seen_sources = []
+
 
 def main():
     get_data()
@@ -16,19 +18,18 @@ def get_data():
     """
     Gets data and pushes through to append to master list
     """
-    # Specify the column for bolded values
     column_index = 1
     count = 0
     results = []
     folder_num = ""
 
-    # Iterate through the cells in the specified column
+    # Iterate through the cells in the column A
     for row in source_sheet.iter_rows(min_col=column_index):
-        # Check if the cell is empty
+        # Check if the cell is empty or contains headers
         if (row[0].value is None) or (row[0].font and row[0].font.bold and count >= 1):
             continue  # Skip empty cells and headers
 
-        # Check if the font is bold
+        # Check if font is bold
         if row[0].font and row[0].font.bold and count == 0:
             count = 1
             folder_num = get_folder_num(row[0].value)
@@ -45,9 +46,9 @@ def get_folder_num(row):
     folder_index = row.find("FOLDER NUM.:")
 
     if folder_index != -1:
-        # Extract the substring after "FOLDER NUM.:" and before the next space or end of string
+        # Extract Folder Num from String
         folder_num_str = row[folder_index + len("FOLDER NUM.:") :]
-        folder_num = folder_num_str.split()[0]  # Split by space and take the first part
+        folder_num = folder_num_str.split()[0]
 
         print(f"Folder Number: {folder_num}")
         return folder_num
@@ -95,22 +96,37 @@ def create_new_column(analyte, method):
     return index
 
 
+def get_row_number(source):
+    """
+    Gets the row number of a seen source
+    """
+    for seen_source, row_number in seen_sources:
+        if seen_source == source:
+            return row_number
+    return None
+
+
 def push_data(folder_num, data):
     """
     Pushes data to the masterlist
     """
 
     for result in data:
+        source = result["source"]
         index = find_column_index(result)
+        row_num = get_row_number(source)
 
-        if index is None: # If the index is none, the analyte does not exists in the masterlist
+        if row_num is None:
+            row_num = destination_sheet.max_row + 1
+            seen_sources.append((source, row_num))
+
+        if index is None:  # If the index is none, analyte does not exists in masterlist
             index = create_new_column(result["analyte"], result["method"])
 
-        start_row = destination_sheet.max_row + 1
-        destination_sheet.cell(row=start_row, column=1, value=result["source"])
-        destination_sheet.cell(row=start_row, column=2, value=result["date"])
-        destination_sheet.cell(row=start_row, column=3, value=folder_num)
-        destination_sheet.cell(row=start_row, column=index, value=result["result"])
+        destination_sheet.cell(row=row_num, column=1, value=result["source"])
+        destination_sheet.cell(row=row_num, column=2, value=result["date"])
+        destination_sheet.cell(row=row_num, column=3, value=folder_num)
+        destination_sheet.cell(row=row_num, column=index, value=result["result"])
 
     destination_workbook.save(master_list)
 
