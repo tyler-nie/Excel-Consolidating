@@ -1,5 +1,6 @@
 from openpyxl import load_workbook
 from config import source_file, master_list
+import os
 
 source_workbook = load_workbook(source_file)
 source_sheet = source_workbook.active
@@ -9,9 +10,19 @@ destination_sheet = destination_workbook.active
 
 seen_sources = []
 
+directory = "compile"
+
 
 def main():
-    get_data()
+
+    global source_workbook
+    global source_sheet
+
+    for name in os.listdir(directory):
+        path = os.path.join(directory, name)
+        source_workbook = load_workbook(path)
+        source_sheet = source_workbook.active
+        get_data()
 
 
 def get_data():
@@ -65,7 +76,11 @@ def get_results(row):
     date = (str(row[3].value)).split()[0]
     method = row[8].value
     analyte = row[9].value
-    result = row[10].value
+    try:
+        result = float(row[10].value)
+    except:
+        result = row[10].value
+
     return {
         "source": source,
         "date": date,
@@ -111,6 +126,8 @@ def push_data(folder_num, data):
     """
     Pushes data to the masterlist
     """
+    global seen_sources
+
     for result in data:
         source = result["source"]
         index = find_column_index(result)
@@ -123,14 +140,15 @@ def push_data(folder_num, data):
         if index is None:  # If the index is none, analyte does not exists in masterlist
             index = create_new_column(result["analyte"], result["method"])
 
-        # print(f"Writing data at row {row_num}, column {index}")  # Troubleshooting
+        print(f"Writing data at row {row_num}, column {index}")  # Troubleshooting
         
         destination_sheet.cell(row=row_num, column=1, value=result["source"])
         destination_sheet.cell(row=row_num, column=2, value=result["date"])
-        destination_sheet.cell(row=row_num, column=3, value=folder_num)
+        destination_sheet.cell(row=row_num, column=3, value=int(folder_num))
         destination_sheet.cell(row=row_num, column=index, value=result["result"])
 
     destination_workbook.save(master_list)
+    seen_sources = []
 
 
 if __name__ == "__main__":
